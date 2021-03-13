@@ -1,0 +1,39 @@
+[package]
+name = "attiny85-test"
+version = "0.1.0"
+authors = ["Eric Wood <eric@ericwood.org>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["rt"]
+rt = ["attiny85-hal/rt"]
+
+[dependencies]
+# A panic handler is needed.  This is a crate with the most basic one.
+# The `leonardo-panic` example shows a more elaborate version.
+panic-halt = "0.2.0"
+avr-device = "0.3.0"
+
+[dependencies.attiny85-hal]
+git = "https://github.com/rahix/avr-hal"
+rev = "a202778"
+# ^- Pin the dependency to a specific version.  You should use the latest
+# commit hash from the avr-hal master branch.  You can find it here:
+#
+#    https://github.com/rahix/avr-hal/commits/master
+
+# Configure the build for minimal size
+[profile.dev]
+panic = "abort"
+lto = true
+opt-level = "s"
+debug-assertions = false
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+debug-assertions = false
