@@ -21,10 +21,10 @@ fn main() -> ! {
 
     let dp = attiny85_hal::pac::Peripherals::take().unwrap();
     let mut portb = dp.PORTB.split();
-    let mut pb1 = portb.pb1.into_output(&mut portb.ddr);
+    let mut pb1 = portb.pb3.into_output(&mut portb.ddr);
 
     loop {
         pb1.toggle().void_unwrap();
-        delay.delay_us(500u16);
+        delay.delay_us(1000u16);
     }
 }
