@@ -15,6 +15,7 @@ version = "0.1.0"
 dependencies = [
  "attiny85-hal",
  "avr-device",
+ "embedded-hal",
  "panic-halt",
 ]
 

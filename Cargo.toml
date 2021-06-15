@@ -15,6 +15,7 @@ rt = ["attiny85-hal/rt"]
 # The `leonardo-panic` example shows a more elaborate version.
 panic-halt = "0.2.0"
 avr-device = "0.3.0"
+embedded-hal = "0.2.4"
 
 [dependencies.attiny85-hal]
 git = "https://github.com/rahix/avr-hal"
