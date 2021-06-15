@@ -44,12 +44,12 @@ fn main() -> ! {
     let bypass_input = portb.pb0.into_pull_up_input(&mut portb.ddr);
     let bypass_output = portb.pb3.into_output(&mut portb.ddr);
     let bypass_led = portb.pb2.into_output(&mut portb.ddr);
-    let mut bypass = Switch::new(bypass_input, bypass_output, bypass_led);
+    let bypass = Switch::new(bypass_input, bypass_output, bypass_led);
 
     let preset_input = portb.pb1.into_pull_up_input(&mut portb.ddr);
     let preset_output = portb.pb4.into_output(&mut portb.ddr);
     let preset_led = portb.pb5.into_output(&mut portb.ddr);
-    let mut preset = Switch::new(preset_input, preset_output, preset_led);
+    let preset = Switch::new(preset_input, preset_output, preset_led);
 
     free(|cs| {
         BYPASS_SWITCH.borrow(cs).replace(Some(bypass));
@@ -57,7 +57,14 @@ fn main() -> ! {
     });
 
     loop {
-        bypass.check();
-        preset.check();
+        free(|cs| {
+            let mut bypass_ref = BYPASS_SWITCH.borrow(cs).borrow_mut();
+            let bypass = bypass_ref.as_mut().unwrap();
+            bypass.check();
+
+            let mut preset_ref = PRESET_SWITCH.borrow(cs).borrow_mut();
+            let preset = preset_ref.as_mut().unwrap();
+            preset.check();
+        })
     }
 }
