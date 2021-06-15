@@ -1,5 +1,7 @@
 extern crate attiny85_hal;
 extern crate embedded_hal as hal;
+use embedded_hal::digital::v2::{InputPin, OutputPin};
+use core::fmt::Debug;
 
 pub struct Switch<Input, Output, Led> {
     input: Input,
@@ -11,12 +13,12 @@ pub struct Switch<Input, Output, Led> {
 
 impl<Input, Output, Led> Switch<Input, Output, Led>
 where
-    Input: hal::digital::v2::InputPin,
-    Output: hal::digital::v2::OutputPin,
-    Led: hal::digital::v2::OutputPin,
-    Input::Error: core::fmt::Debug,
-    Output::Error: core::fmt::Debug,
-    Led::Error: core::fmt::Debug,
+    Input: InputPin,
+    Output: OutputPin,
+    Led: OutputPin,
+    Input::Error: Debug,
+    Output::Error: Debug,
+    Led::Error: Debug,
 {
     pub fn new(input: Input, output: Output, led: Led) -> Self {
         Switch {
