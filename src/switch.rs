@@ -9,11 +9,6 @@ pub struct Switch<Input, Output, Led> {
     was_pressed: bool,
 }
 
-// #[duplicate(
-//     input_type output_type led_type;
-//     [ PB0 ]    [ PB3 ]     [ PB2 ];
-//     [ PB1 ]    [ PB4 ]     [ PB5 ];
-// )]
 impl<Input, Output, Led> Switch<Input, Output, Led> where
     Input: hal::digital::v2::InputPin,
     Output: hal::digital::v2::OutputPin,
@@ -23,7 +18,6 @@ impl<Input, Output, Led> Switch<Input, Output, Led> where
     Led::Error: core::fmt::Debug,
 {
     pub fn new(input: Input, output: Output, led: Led) -> Self {
-    // pub fn new(input: portb::input_type, output: portb::output_type, led: portb::led_type) -> Self {
         Switch { input, output, led, active: false, was_pressed: false }
     }
 

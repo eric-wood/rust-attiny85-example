@@ -6,18 +6,26 @@
 extern crate panic_halt;
 
 extern crate avr_device;
+use avr_device::interrupt::Mutex;
 
 extern crate attiny85_hal as hal;
+use hal::{port::{portb::{PB0, PB1, PB2, PB3, PB4, PB5}, mode::{Input, Output, PullUp}}};
 
 use hal::prelude::*;
 
 #[cfg(feature = "rt")]
 use hal::entry;
 
+use core::cell;
+use cell::RefCell;
+
 mod switch;
 use switch::Switch;
 
 extern crate embedded_hal;
+
+type BypassSwitch = Switch<PB0<Input<PullUp>>, PB3<Output>, PB2<Output>>;
+static BYPASS_SWITCH: Mutex<RefCell<Option<BypassSwitch>>> = Mutex::new(RefCell::new(None));
 
 #[entry]
 fn main() -> ! {
