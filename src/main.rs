@@ -6,18 +6,21 @@
 extern crate panic_halt;
 
 extern crate avr_device;
-use avr_device::interrupt::Mutex;
+use avr_device::interrupt::{free, Mutex};
 
 extern crate attiny85_hal as hal;
-use hal::{port::{portb::{PB0, PB1, PB2, PB3, PB4, PB5}, mode::{Input, Output, PullUp}}};
+use hal::port::{
+    mode::{Input, Output, PullUp},
+    portb::{PB0, PB1, PB2, PB3, PB4, PB5},
+};
 
 use hal::prelude::*;
 
 #[cfg(feature = "rt")]
 use hal::entry;
 
-use core::cell;
 use cell::RefCell;
+use core::cell;
 
 mod switch;
 use switch::Switch;
@@ -26,6 +29,9 @@ extern crate embedded_hal;
 
 type BypassSwitch = Switch<PB0<Input<PullUp>>, PB3<Output>, PB2<Output>>;
 static BYPASS_SWITCH: Mutex<RefCell<Option<BypassSwitch>>> = Mutex::new(RefCell::new(None));
+
+type PresetSwitch = Switch<PB1<Input<PullUp>>, PB4<Output>, PB5<Output>>;
+static PRESET_SWITCH: Mutex<RefCell<Option<PresetSwitch>>> = Mutex::new(RefCell::new(None));
 
 #[entry]
 fn main() -> ! {
@@ -44,6 +50,11 @@ fn main() -> ! {
     let preset_output = portb.pb4.into_output(&mut portb.ddr);
     let preset_led = portb.pb5.into_output(&mut portb.ddr);
     let mut preset = Switch::new(preset_input, preset_output, preset_led);
+
+    free(|cs| {
+        BYPASS_SWITCH.borrow(cs).replace(Some(bypass));
+        PRESET_SWITCH.borrow(cs).replace(Some(preset));
+    });
 
     loop {
         bypass.check();

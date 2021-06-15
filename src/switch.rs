@@ -1,5 +1,5 @@
-extern crate embedded_hal as hal;
 extern crate attiny85_hal;
+extern crate embedded_hal as hal;
 
 pub struct Switch<Input, Output, Led> {
     input: Input,
@@ -9,7 +9,8 @@ pub struct Switch<Input, Output, Led> {
     was_pressed: bool,
 }
 
-impl<Input, Output, Led> Switch<Input, Output, Led> where
+impl<Input, Output, Led> Switch<Input, Output, Led>
+where
     Input: hal::digital::v2::InputPin,
     Output: hal::digital::v2::OutputPin,
     Led: hal::digital::v2::OutputPin,
@@ -18,7 +19,13 @@ impl<Input, Output, Led> Switch<Input, Output, Led> where
     Led::Error: core::fmt::Debug,
 {
     pub fn new(input: Input, output: Output, led: Led) -> Self {
-        Switch { input, output, led, active: false, was_pressed: false }
+        Switch {
+            input,
+            output,
+            led,
+            active: false,
+            was_pressed: false,
+        }
     }
 
     pub fn check(&mut self) {
