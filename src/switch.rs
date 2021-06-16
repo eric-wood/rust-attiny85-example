@@ -1,12 +1,22 @@
 extern crate attiny85_hal;
 extern crate embedded_hal as hal;
-use embedded_hal::digital::v2::{InputPin, OutputPin};
 use core::fmt::Debug;
+use avr_device::interrupt::free;
+use embedded_hal::digital::v2::{InputPin, OutputPin};
+use crate::{BYPASS_TIMER, PRESET_TIMER};
+
+pub enum Kind {
+    BYPASS,
+    PRESET,
+}
+
+static HOLD_TIME_MS: u8 = 100;
 
 pub struct Switch<Input, Output, Led> {
     input: Input,
     output: Output,
     led: Led,
+    kind: Kind,
     active: bool,
     was_pressed: bool,
 }
@@ -20,11 +30,12 @@ where
     Output::Error: Debug,
     Led::Error: Debug,
 {
-    pub fn new(input: Input, output: Output, led: Led) -> Self {
+    pub fn new(input: Input, output: Output, led: Led, kind: Kind) -> Self {
         Switch {
             input,
             output,
             led,
+            kind,
             active: false,
             was_pressed: false,
         }
@@ -41,8 +52,7 @@ where
         } else if self.was_pressed && !pressed {
             self.was_pressed = false;
 
-            // TODO: check to see if minimum time limit has been met
-            // if it has been, turn the effect off
+            self.handle_momentary();
         }
     }
 
@@ -68,6 +78,30 @@ where
             self.output.set_high().unwrap();
         } else {
             self.output.set_low().unwrap();
+        }
+    }
+
+    fn handle_momentary(&self) {
+        let elapsed: u8 = 0;
+
+        free(|cs| {
+            match self.kind {
+                BYPASS => {
+                    let mut timer_ref = BYPASS_TIMER.borrow(cs).borrow_mut();
+                    let timer = timer_ref.as_mut().unwrap();
+                    elapsed = timer.elapsed_time_ms();
+                },
+                PRESET => {
+                    let mut timer_ref = PRESET_TIMER.borrow(cs).borrow_mut();
+                    let timer = timer_ref.as_mut().unwrap();
+                    elapsed = timer.elapsed_time_ms();
+                }
+            };
+        });
+
+        if elapsed >= HOLD_TIME_MS {
+            self.active = false;
+            self.set_state(self.active);
         }
     }
 }
