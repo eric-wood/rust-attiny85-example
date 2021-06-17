@@ -1,24 +1,23 @@
 extern crate attiny85_hal;
 extern crate embedded_hal as hal;
+use crate::Timer;
+use avr_device::interrupt::{free, Mutex};
+use cell::RefCell;
+use core::cell;
 use core::fmt::Debug;
-use avr_device::interrupt::free;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
-use crate::{BYPASS_TIMER, PRESET_TIMER};
-
-pub enum Kind {
-    BYPASS,
-    PRESET,
-}
 
 static HOLD_TIME_MS: u8 = 100;
+
+type TimerMutex = &'static Mutex<RefCell<Option<Timer>>>;
 
 pub struct Switch<Input, Output, Led> {
     input: Input,
     output: Output,
     led: Led,
-    kind: Kind,
     active: bool,
     was_pressed: bool,
+    timer: TimerMutex,
 }
 
 impl<Input, Output, Led> Switch<Input, Output, Led>
@@ -30,12 +29,12 @@ where
     Output::Error: Debug,
     Led::Error: Debug,
 {
-    pub fn new(input: Input, output: Output, led: Led, kind: Kind) -> Self {
+    pub fn new(input: Input, output: Output, led: Led, timer: TimerMutex) -> Self {
         Switch {
             input,
             output,
             led,
-            kind,
+            timer,
             active: false,
             was_pressed: false,
         }
@@ -85,18 +84,9 @@ where
         let elapsed: u8 = 0;
 
         free(|cs| {
-            match self.kind {
-                BYPASS => {
-                    let mut timer_ref = BYPASS_TIMER.borrow(cs).borrow_mut();
-                    let timer = timer_ref.as_mut().unwrap();
-                    elapsed = timer.elapsed_time_ms();
-                },
-                PRESET => {
-                    let mut timer_ref = PRESET_TIMER.borrow(cs).borrow_mut();
-                    let timer = timer_ref.as_mut().unwrap();
-                    elapsed = timer.elapsed_time_ms();
-                }
-            };
+            let mut timer_ref = self.timer.borrow(cs).borrow_mut();
+            let timer = timer_ref.as_mut().unwrap();
+            elapsed = timer.elapsed_time_ms();
         });
 
         if elapsed >= HOLD_TIME_MS {
