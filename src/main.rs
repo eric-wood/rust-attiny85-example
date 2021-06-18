@@ -50,7 +50,7 @@ fn main() -> ! {
     // 1Mhz / 64 * 156 = ~10ms
     let tc0 = peripherals.TC0;
     tc0.tccr0a.write(|w| w.wgm0().ctc());
-    tc0.tccr0b.write(|w| w.cs0().prescale_64());
+    tc0.tccr0b.write(|w| w.cs0().prescale_256());
     tc0.ocr0a.write(|w| unsafe { w.bits(156 as u8) });
     tc0.timsk.write(|w| w.ocie0a().bit(true));
 

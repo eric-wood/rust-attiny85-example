@@ -47,7 +47,7 @@ where
             free(|cs| {
                 let mut timer_ref = self.timer.borrow(cs).borrow_mut();
                 let timer = timer_ref.as_mut().unwrap();
-                timer.start();
+                timer.reset();
             });
 
             self.set_state(!self.active);
@@ -90,7 +90,6 @@ where
             let timer = timer_ref.as_mut().unwrap();
             if timer.threshold_reached {
                 self.set_state(false);
-                timer.stop();
             }
         });
     }
