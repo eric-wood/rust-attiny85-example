@@ -56,7 +56,10 @@ fn main() -> ! {
 
     // Enable pin change interrupt for PB0 and PB1 to detect switch changes
     peripherals.EXINT.gimsk.write(|w| w.pcie().set_bit());
-    peripherals.EXINT.pcmsk.write(|w| unsafe { w.bits(0b00000011) });
+    peripherals
+        .EXINT
+        .pcmsk
+        .write(|w| unsafe { w.bits(0b00000011) });
 
     let bypass_timer = Timer::new();
     let preset_timer = Timer::new();
@@ -82,8 +85,7 @@ fn main() -> ! {
 
     unsafe { avr_device::interrupt::enable() };
 
-    loop {
-    }
+    loop {}
 }
 
 #[interrupt(attiny85)]
