@@ -1,7 +1,8 @@
 extern crate attiny85_hal as hal;
 extern crate embedded_hal;
 
-static HOLD_TIME_MS: u8 = 100;
+// Using multiples of 10 so as not to overflow
+static HOLD_TIME_TEN_MS: u8 = 50;
 
 pub struct Timer {
     ticks: u8,
@@ -35,7 +36,7 @@ impl Timer {
 
         self.ticks += 1;
 
-        if self.ticks >= HOLD_TIME_MS / 10 {
+        if self.ticks >= HOLD_TIME_TEN_MS {
             self.threshold_reached = true
         }
     }

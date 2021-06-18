@@ -54,8 +54,9 @@ fn main() -> ! {
     tc0.ocr0a.write(|w| unsafe { w.bits(156 as u8) });
     tc0.timsk.write(|w| w.ocie0a().bit(true));
 
-    // peripherals.EXINT.gimsk.write(|w| w.pcie().set_bit());
-    // peripherals.EXINT.pcmsk.write(|w| unsafe { w.bits(0b00000001) });
+    // Enable pin change interrupt for PB0 and PB1 to detect switch changes
+    peripherals.EXINT.gimsk.write(|w| w.pcie().set_bit());
+    peripherals.EXINT.pcmsk.write(|w| unsafe { w.bits(0b00000011) });
 
     let bypass_timer = Timer::new();
     let preset_timer = Timer::new();
@@ -82,15 +83,6 @@ fn main() -> ! {
     unsafe { avr_device::interrupt::enable() };
 
     loop {
-        free(|cs| {
-            let mut bypass_ref = BYPASS_SWITCH.borrow(cs).borrow_mut();
-            let bypass = bypass_ref.as_mut().unwrap();
-            bypass.check();
-
-            let mut preset_ref = PRESET_SWITCH.borrow(cs).borrow_mut();
-            let preset = preset_ref.as_mut().unwrap();
-            preset.check();
-        })
     }
 }
 
@@ -104,5 +96,18 @@ fn TIMER0_COMPA() {
         let mut preset_timer_ref = PRESET_TIMER.borrow(cs).borrow_mut();
         let preset_timer = preset_timer_ref.as_mut().unwrap();
         preset_timer.tick();
+    })
+}
+
+#[interrupt(attiny85)]
+fn PCINT0() {
+    free(|cs| {
+        let mut bypass_ref = BYPASS_SWITCH.borrow(cs).borrow_mut();
+        let bypass = bypass_ref.as_mut().unwrap();
+        bypass.on_change();
+
+        let mut preset_ref = PRESET_SWITCH.borrow(cs).borrow_mut();
+        let preset = preset_ref.as_mut().unwrap();
+        preset.on_change();
     })
 }

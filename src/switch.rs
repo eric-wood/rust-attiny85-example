@@ -38,11 +38,10 @@ where
         }
     }
 
-    pub fn check(&mut self) {
+    pub fn on_change(&mut self) {
         let pressed = self.is_pressed();
 
         if !self.was_pressed && pressed {
-            self.active = !self.active;
             self.was_pressed = true;
 
             free(|cs| {
@@ -51,7 +50,7 @@ where
                 timer.start();
             });
 
-            self.set_state(self.active);
+            self.set_state(!self.active);
         } else if self.was_pressed && !pressed {
             self.was_pressed = false;
 
@@ -64,6 +63,7 @@ where
     }
 
     fn set_state(&mut self, state: bool) {
+        self.active = state;
         self.set_led(state);
         self.set_switch(state);
     }
@@ -89,8 +89,7 @@ where
             let mut timer_ref = self.timer.borrow(cs).borrow_mut();
             let timer = timer_ref.as_mut().unwrap();
             if timer.threshold_reached {
-                self.active = false;
-                self.set_state(self.active);
+                self.set_state(false);
                 timer.stop();
             }
         });
