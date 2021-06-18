@@ -7,8 +7,6 @@ use core::cell;
 use core::fmt::Debug;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 
-static HOLD_TIME_MS: u8 = 100;
-
 type TimerMutex = &'static Mutex<RefCell<Option<Timer>>>;
 
 pub struct Switch<Input, Output, Led> {
@@ -47,6 +45,12 @@ where
             self.active = !self.active;
             self.was_pressed = true;
 
+            free(|cs| {
+                let mut timer_ref = self.timer.borrow(cs).borrow_mut();
+                let timer = timer_ref.as_mut().unwrap();
+                timer.start();
+            });
+
             self.set_state(self.active);
         } else if self.was_pressed && !pressed {
             self.was_pressed = false;
@@ -80,18 +84,15 @@ where
         }
     }
 
-    fn handle_momentary(&self) {
-        let elapsed: u8 = 0;
-
+    fn handle_momentary(&mut self) {
         free(|cs| {
             let mut timer_ref = self.timer.borrow(cs).borrow_mut();
             let timer = timer_ref.as_mut().unwrap();
-            elapsed = timer.elapsed_time_ms();
+            if timer.threshold_reached {
+                self.active = false;
+                self.set_state(self.active);
+                timer.stop();
+            }
         });
-
-        if elapsed >= HOLD_TIME_MS {
-            self.active = false;
-            self.set_state(self.active);
-        }
     }
 }

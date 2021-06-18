@@ -44,10 +44,15 @@ static PRESET_TIMER: Mutex<RefCell<Option<Timer>>> = Mutex::new(RefCell::new(Non
 fn main() -> ! {
     let peripherals = attiny85_hal::pac::Peripherals::take().unwrap();
 
-    let mut tc0 = peripherals.TC0;
+    // Configure timer/counter 0 to count up and fire the TIMER0_COMPA
+    // at a regular interval to act as a clock for our timers
+    // The compare interrupt is set to fire roughly every 10ms:
+    // 1Mhz / 64 * 156 = ~10ms
+    let tc0 = peripherals.TC0;
     tc0.tccr0a.write(|w| w.wgm0().ctc());
-    tc0.ocr0a.write(|w| unsafe { w.bits(250 as u8) });
-    tc0.tccr0b.write(|w| w.cs0.prescale_1024());
+    tc0.tccr0b.write(|w| w.cs0().prescale_64());
+    tc0.ocr0a.write(|w| unsafe { w.bits(156 as u8) });
+    tc0.timsk.write(|w| w.ocie0a().bit(true));
 
     // peripherals.EXINT.gimsk.write(|w| w.pcie().set_bit());
     // peripherals.EXINT.pcmsk.write(|w| unsafe { w.bits(0b00000001) });
