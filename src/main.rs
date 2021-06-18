@@ -79,6 +79,8 @@ fn main() -> ! {
         PRESET_TIMER.borrow(cs).replace(Some(preset_timer));
     });
 
+    unsafe { avr_device::interrupt::enable() };
+
     loop {
         free(|cs| {
             let mut bypass_ref = BYPASS_SWITCH.borrow(cs).borrow_mut();
