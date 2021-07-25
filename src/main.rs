@@ -59,7 +59,7 @@ fn main() -> ! {
     peripherals
         .EXINT
         .pcmsk
-        .write(|w| unsafe { w.bits(0b00000011) });
+        .write(|w| unsafe { w.bits(0b00011000) });
 
     let bypass_timer = Timer::new();
     let preset_timer = Timer::new();
