@@ -9,29 +9,25 @@ use embedded_hal::digital::v2::{InputPin, OutputPin};
 
 type TimerMutex = &'static Mutex<RefCell<Option<Timer>>>;
 
-pub struct Switch<Input, Output, Led> {
+pub struct Switch<Input, Output> {
     input: Input,
     output: Output,
-    led: Led,
     active: bool,
     was_pressed: bool,
     timer: TimerMutex,
 }
 
-impl<Input, Output, Led> Switch<Input, Output, Led>
+impl<Input, Output> Switch<Input, Output>
 where
     Input: InputPin,
     Output: OutputPin,
-    Led: OutputPin,
     Input::Error: Debug,
     Output::Error: Debug,
-    Led::Error: Debug,
 {
-    pub fn new(input: Input, output: Output, led: Led, timer: TimerMutex) -> Self {
+    pub fn new(input: Input, output: Output, timer: TimerMutex) -> Self {
         Switch {
             input,
             output,
-            led,
             timer,
             active: false,
             was_pressed: false,
@@ -64,16 +60,7 @@ where
 
     fn set_state(&mut self, state: bool) {
         self.active = state;
-        self.set_led(state);
         self.set_switch(state);
-    }
-
-    fn set_led(&mut self, state: bool) {
-        if state {
-            self.led.set_high().unwrap();
-        } else {
-            self.led.set_low().unwrap();
-        }
     }
 
     fn set_switch(&mut self, state: bool) {

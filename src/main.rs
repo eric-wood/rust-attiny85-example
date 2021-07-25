@@ -31,10 +31,10 @@ use timer::Timer;
 
 extern crate embedded_hal;
 
-type BypassSwitch = Switch<PB0<Input<PullUp>>, PB3<Output>, PB2<Output>>;
+type BypassSwitch = Switch<PB3<Input<PullUp>>, PB0<Output>>;
 static BYPASS_SWITCH: Mutex<RefCell<Option<BypassSwitch>>> = Mutex::new(RefCell::new(None));
 
-type PresetSwitch = Switch<PB1<Input<PullUp>>, PB4<Output>, PB5<Output>>;
+type PresetSwitch = Switch<PB4<Input<PullUp>>, PB1<Output>>;
 static PRESET_SWITCH: Mutex<RefCell<Option<PresetSwitch>>> = Mutex::new(RefCell::new(None));
 
 static BYPASS_TIMER: Mutex<RefCell<Option<Timer>>> = Mutex::new(RefCell::new(None));
@@ -66,15 +66,13 @@ fn main() -> ! {
 
     let mut portb = peripherals.PORTB.split();
 
-    let bypass_input = portb.pb0.into_pull_up_input(&mut portb.ddr);
-    let bypass_output = portb.pb3.into_output(&mut portb.ddr);
-    let bypass_led = portb.pb2.into_output(&mut portb.ddr);
-    let bypass = Switch::new(bypass_input, bypass_output, bypass_led, &BYPASS_TIMER);
+    let bypass_input = portb.pb3.into_pull_up_input(&mut portb.ddr);
+    let bypass_output = portb.pb0.into_output(&mut portb.ddr);
+    let bypass = Switch::new(bypass_input, bypass_output, &BYPASS_TIMER);
 
-    let preset_input = portb.pb1.into_pull_up_input(&mut portb.ddr);
-    let preset_output = portb.pb4.into_output(&mut portb.ddr);
-    let preset_led = portb.pb5.into_output(&mut portb.ddr);
-    let preset = Switch::new(preset_input, preset_output, preset_led, &PRESET_TIMER);
+    let preset_input = portb.pb4.into_pull_up_input(&mut portb.ddr);
+    let preset_output = portb.pb1.into_output(&mut portb.ddr);
+    let preset = Switch::new(preset_input, preset_output, &PRESET_TIMER);
 
     free(|cs| {
         BYPASS_SWITCH.borrow(cs).replace(Some(bypass));
