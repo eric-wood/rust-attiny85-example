@@ -2,7 +2,7 @@ extern crate attiny85_hal as hal;
 extern crate embedded_hal;
 
 // Using multiples of 10 so as not to overflow
-static HOLD_TIME_TEN_MS: u8 = 100;
+static HOLD_TIME_TEN_MS: u8 = 70;
 
 pub struct Timer {
     ticks: u8,

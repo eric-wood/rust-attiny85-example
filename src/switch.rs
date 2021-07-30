@@ -13,7 +13,7 @@ pub struct Switch<Input, Output> {
     input: Input,
     output: Output,
     active: bool,
-    was_pressed: bool,
+    previous_state: bool,
     timer: TimerMutex,
 }
 
@@ -30,16 +30,20 @@ where
             output,
             timer,
             active: false,
-            was_pressed: false,
+            previous_state: false,
         }
     }
 
     pub fn on_change(&mut self) {
         let pressed = self.is_pressed();
 
-        if !self.was_pressed && pressed {
-            self.was_pressed = true;
+        if pressed == self.previous_state {
+            return;
+        }
 
+        self.previous_state = pressed;
+
+        if pressed {
             free(|cs| {
                 let mut timer_ref = self.timer.borrow(cs).borrow_mut();
                 let timer = timer_ref.as_mut().unwrap();
@@ -47,9 +51,7 @@ where
             });
 
             self.set_state(!self.active);
-        } else if self.was_pressed && !pressed {
-            self.was_pressed = false;
-
+        } else  {
             self.handle_momentary();
         }
     }
