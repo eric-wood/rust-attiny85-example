@@ -1,6 +1,6 @@
 extern crate attiny85_hal;
 extern crate embedded_hal as hal;
-use crate::Timer;
+use crate::SwitchTimer;
 use core::fmt::Debug;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 
@@ -27,23 +27,23 @@ where
         }
     }
 
-    pub fn on_change(&mut self, debounce_timer: &mut Timer, hold_timer: &mut Timer) {
+    pub fn on_change(&mut self, timer: &mut SwitchTimer) {
         let pressed = self.is_pressed();
 
-        if pressed == self.previous_state || !debounce_timer.threshold_reached {
+        if pressed == self.previous_state || !timer.debounce_threshold_reached() {
             return;
         }
 
-        debounce_timer.reset();
+        timer.debounce_reset();
 
         self.previous_state = pressed;
 
         if pressed {
-            hold_timer.reset();
+            timer.hold_reset();
 
             self.set_state(!self.active);
         } else {
-            if hold_timer.threshold_reached {
+            if timer.hold_threshold_reached() {
                 self.set_state(false);
             }
         }

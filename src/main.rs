@@ -25,15 +25,14 @@ use switch::Switch;
 mod timer;
 use timer::Timer;
 
+mod switch_timer;
+use switch_timer::SwitchTimer;
+
 extern crate embedded_hal;
 
 type InterruptFlag = Mutex<RefCell<bool>>;
 static TIMER_INTERRUPT: InterruptFlag = Mutex::new(RefCell::new(false));
 static BUTTON_INTERRUPT: InterruptFlag = Mutex::new(RefCell::new(false));
-
-static DEBOUNCE_TIME_MS: u8 = 7;
-// Note that this is scaled by 10 so as not to overflow!
-static HOLD_TIME_TEN_MS: u8 = 70;
 
 #[entry]
 fn main() -> ! {
@@ -56,8 +55,7 @@ fn main() -> ! {
         .pcmsk
         .write(|w| unsafe { w.bits(0b00011000) });
 
-    let mut bypass_debounce_timer = Timer::new(DEBOUNCE_TIME_MS, 0);
-    let mut bypass_hold_timer = Timer::new(HOLD_TIME_TEN_MS, 10);
+    let mut bypass_timer = SwitchTimer::new();
 
     let mut portb = peripherals.PORTB.split();
 
@@ -78,11 +76,10 @@ fn main() -> ! {
         });
 
         if timer {
-            bypass_debounce_timer.tick();
-            bypass_hold_timer.tick();
+            bypass_timer.tick();
         }
         if button {
-            bypass.on_change(&mut bypass_debounce_timer, &mut bypass_hold_timer);
+            bypass.on_change(&mut bypass_timer);
         }
     }
 }
