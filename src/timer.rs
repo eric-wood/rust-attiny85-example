@@ -1,18 +1,21 @@
 extern crate attiny85_hal as hal;
 extern crate embedded_hal;
 
-// Using multiples of 10 so as not to overflow
-static HOLD_TIME_TEN_MS: u8 = 70;
-
 pub struct Timer {
+    ticks_ms: u8,
     ticks: u8,
+    threshold: u8,
+    threshold_division: u8,
     pub threshold_reached: bool,
 }
 
 impl Timer {
-    pub fn new() -> Self {
+    pub fn new(threshold: u8, threshold_division: u8) -> Self {
         Timer {
+            ticks_ms: 0,
             ticks: 0,
+            threshold,
+            threshold_division,
             threshold_reached: false,
         }
     }
@@ -20,6 +23,7 @@ impl Timer {
     pub fn reset(&mut self) {
         self.threshold_reached = false;
         self.ticks = 0;
+        self.ticks_ms = 0;
     }
 
     pub fn tick(&mut self) {
@@ -27,10 +31,15 @@ impl Timer {
             return;
         }
 
-        self.ticks += 1;
+        self.ticks_ms += 1;
 
-        if self.ticks >= HOLD_TIME_TEN_MS {
-            self.threshold_reached = true
+        if self.ticks_ms >= self.threshold_division {
+            self.ticks += 1;
+            self.ticks_ms = 0;
+
+            if self.ticks >= self.threshold {
+                self.threshold_reached = true
+            }
         }
     }
 }
