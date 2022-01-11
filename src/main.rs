@@ -49,11 +49,11 @@ fn main() -> ! {
     // Configure timer/counter 0 to count up and fire the TIMER0_COMPA
     // at a regular interval to act as a clock for our timers
     // The compare interrupt is set to fire roughly every 1ms:
-    // 1 / (8Mhz / 64) * 125 = 1ms
+    // 1 / (1Mhz / 8) * 125 = 1ms
     let tc0 = peripherals.TC0;
     tc0.tccr0a.write(|w| w.wgm0().ctc());
-    tc0.tccr0b.write(|w| w.cs0().prescale_64());
-    tc0.ocr0a.write(|w| unsafe { w.bits(125 as u8) });
+    tc0.tccr0b.write(|w| w.cs0().prescale_8());
+    tc0.ocr0a.write(|w| unsafe { w.bits(124 as u8) });
     tc0.timsk.write(|w| w.ocie0a().bit(true));
 
     // Enable pin change interrupt for PB0 and PB1 to detect switch changes
@@ -78,7 +78,9 @@ fn main() -> ! {
     );
 
     free(|cs| {
-        BYPASS_SWITCH.borrow(cs).replace(Some(bypass));
+        BYPASS_SWITCH
+            .borrow(cs)
+            .replace(Some(bypass));
         BYPASS_DEBOUNCE_TIMER
             .borrow(cs)
             .replace(Some(bypass_hold_timer));
@@ -95,21 +97,30 @@ fn main() -> ! {
 #[interrupt(attiny85)]
 fn TIMER0_COMPA() {
     free(|cs| {
-        let mut bypass_debounce_timer_ref = BYPASS_DEBOUNCE_TIMER.borrow(cs).borrow_mut();
-        let bypass_debounce_timer = bypass_debounce_timer_ref.as_mut().unwrap();
-        bypass_debounce_timer.tick();
+        BYPASS_DEBOUNCE_TIMER
+            .borrow(cs)
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .tick();
 
-        let mut bypass_hold_timer_ref = BYPASS_HOLD_TIMER.borrow(cs).borrow_mut();
-        let bypass_hold_timer = bypass_hold_timer_ref.as_mut().unwrap();
-        bypass_hold_timer.tick();
+        BYPASS_HOLD_TIMER
+            .borrow(cs)
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .tick();
     })
 }
 
 #[interrupt(attiny85)]
 fn PCINT0() {
     free(|cs| {
-        let mut bypass_ref = BYPASS_SWITCH.borrow(cs).borrow_mut();
-        let bypass = bypass_ref.as_mut().unwrap();
-        bypass.on_change();
+        BYPASS_SWITCH
+            .borrow(cs)
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .on_change();
     })
 }
