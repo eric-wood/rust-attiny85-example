@@ -10,10 +10,6 @@ use avr_device::interrupt;
 use avr_device::interrupt::{free, Mutex};
 
 extern crate attiny85_hal as hal;
-use hal::port::{
-    mode::{Input, Output, PullUp},
-    portb::{PB0, PB3},
-};
 
 use hal::prelude::*;
 
@@ -31,12 +27,9 @@ use timer::Timer;
 
 extern crate embedded_hal;
 
-type BypassSwitch = Switch<PB3<Input<PullUp>>, PB0<Output>>;
-static BYPASS_SWITCH: Mutex<RefCell<Option<BypassSwitch>>> = Mutex::new(RefCell::new(None));
-
-pub type TimerMutex = Mutex<RefCell<Option<Timer>>>;
-static BYPASS_DEBOUNCE_TIMER: TimerMutex = Mutex::new(RefCell::new(None));
-static BYPASS_HOLD_TIMER: TimerMutex = Mutex::new(RefCell::new(None));
+type InterruptFlag = Mutex<RefCell<bool>>;
+static TIMER_INTERRUPT: InterruptFlag = Mutex::new(RefCell::new(false));
+static BUTTON_INTERRUPT: InterruptFlag = Mutex::new(RefCell::new(false));
 
 static DEBOUNCE_TIME_MS: u8 = 7;
 // Note that this is scaled by 10 so as not to overflow!
@@ -63,64 +56,47 @@ fn main() -> ! {
         .pcmsk
         .write(|w| unsafe { w.bits(0b00011000) });
 
-    let bypass_debounce_timer = Timer::new(DEBOUNCE_TIME_MS, 0);
-    let bypass_hold_timer = Timer::new(HOLD_TIME_TEN_MS, 10);
+    let mut bypass_debounce_timer = Timer::new(DEBOUNCE_TIME_MS, 0);
+    let mut bypass_hold_timer = Timer::new(HOLD_TIME_TEN_MS, 10);
 
     let mut portb = peripherals.PORTB.split();
 
     let bypass_input = portb.pb3.into_pull_up_input(&mut portb.ddr);
     let bypass_output = portb.pb0.into_output(&mut portb.ddr);
-    let bypass = Switch::new(
-        bypass_input,
-        bypass_output,
-        &BYPASS_DEBOUNCE_TIMER,
-        &BYPASS_HOLD_TIMER,
-    );
-
-    free(|cs| {
-        BYPASS_SWITCH
-            .borrow(cs)
-            .replace(Some(bypass));
-        BYPASS_DEBOUNCE_TIMER
-            .borrow(cs)
-            .replace(Some(bypass_hold_timer));
-        BYPASS_HOLD_TIMER
-            .borrow(cs)
-            .replace(Some(bypass_debounce_timer));
-    });
+    let mut bypass = Switch::new(bypass_input, bypass_output);
 
     unsafe { avr_device::interrupt::enable() };
 
-    loop {}
+    loop {
+        avr_device::asm::sleep();
+
+        let (timer, button) = free(|cs| {
+            (
+                TIMER_INTERRUPT.borrow(cs).replace(false),
+                BUTTON_INTERRUPT.borrow(cs).replace(false),
+            )
+        });
+
+        if timer {
+            bypass_debounce_timer.tick();
+            bypass_hold_timer.tick();
+        }
+        if button {
+            bypass.on_change(&mut bypass_debounce_timer, &mut bypass_hold_timer);
+        }
+    }
 }
 
 #[interrupt(attiny85)]
 fn TIMER0_COMPA() {
     free(|cs| {
-        BYPASS_DEBOUNCE_TIMER
-            .borrow(cs)
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .tick();
-
-        BYPASS_HOLD_TIMER
-            .borrow(cs)
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .tick();
+        TIMER_INTERRUPT.borrow(cs).replace(true);
     })
 }
 
 #[interrupt(attiny85)]
 fn PCINT0() {
     free(|cs| {
-        BYPASS_SWITCH
-            .borrow(cs)
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .on_change();
+        BUTTON_INTERRUPT.borrow(cs).replace(true);
     })
 }
