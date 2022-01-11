@@ -30,20 +30,20 @@ where
     pub fn on_change(&mut self, timer: &mut SwitchTimer) {
         let pressed = self.is_pressed();
 
-        if pressed == self.previous_state || !timer.debounce_threshold_reached() {
+        if pressed == self.previous_state || !timer.debounce.threshold_reached {
             return;
         }
 
-        timer.debounce_reset();
+        timer.debounce.reset();
 
         self.previous_state = pressed;
 
         if pressed {
-            timer.hold_reset();
+            timer.hold.reset();
 
             self.set_state(!self.active);
         } else {
-            if timer.hold_threshold_reached() {
+            if timer.hold.threshold_reached {
                 self.set_state(false);
             }
         }
